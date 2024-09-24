@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Android Assignment</string>
+    <string name="android_assignment">Android Assignment</string>
+    <string name="overall_score">Overall Score</string>
+    <string name="title_text">Title</string>
+    <string name="search_volume">Search Volume</string>
+    <string name="competition">Competition</string>
+    <string name="high">HIGH</string>
+    <string name="average">Average</string>
+    <string name="copy">Copy</string>
+    <string name="share">Share</string>
+    <string name="description">Description</string>
+    <string name="_100">/100</string>
+    <string name="default_error">Oops! Some thing went wrong</string>
+</resources>
