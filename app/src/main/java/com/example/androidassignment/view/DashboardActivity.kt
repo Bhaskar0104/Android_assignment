@@ -6,18 +6,19 @@ import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
 import com.example.androidassignment.R
 import com.example.androidassignment.databinding.ActivityDashboardBinding
 import com.example.androidassignment.databinding.ItemProgressDialogBinding
 import com.example.androidassignment.model.Content
+import com.example.androidassignment.networking.NetworkState
 import com.example.androidassignment.viewmodel.DashboardViewModel
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
 class DashboardActivity : AppCompatActivity() {
 
-    private lateinit var mainViewModel: DashboardViewModel
-
+    private lateinit var viewModel: DashboardViewModel
     private lateinit var binding: ActivityDashboardBinding
     private var progressDialog: AlertDialog? = null
 
@@ -25,47 +26,45 @@ class DashboardActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        mainViewModel = DashboardViewModel()
+
+        viewModel = ViewModelProvider(this)[DashboardViewModel::class.java]
         observeDashboardData()
-        mainViewModel.getDashboardData()
+        viewModel.getDashboardData()
     }
 
     private fun observeDashboardData() {
-        mainViewModel.isLoading.observe(this) { isLoading ->
-            if (isLoading) showProgress()
-        }
+        viewModel.networkState.observe(this) { state ->
+            when (state) {
+                is NetworkState.Loading -> showProgress()
+                is NetworkState.Success -> {
+                    hideProgress()
+                    val contentData: String? = state.data.choices[0].message?.content
+                    val jsonType = object : TypeToken<Content>() {}.type
+                    val content = Gson().fromJson<Content>(contentData, jsonType)
+                    setDashboardData(content)
+                }
 
-        mainViewModel.isError.observe(this) { isError ->
-            if (isError) {
-                hideProgress()
-                binding.errorText.visibility = View.VISIBLE
-                binding.errorText.text = mainViewModel.errorMessage
+                is NetworkState.Error -> {
+                    hideProgress()
+                    binding.errorText.visibility = View.VISIBLE
+                    binding.errorText.text = state.message
+                }
             }
-        }
-
-        mainViewModel.dashboardData.observe(this) { data ->
-            // Display dashboard data to the UI
-            val contentData: String? = data?.choices?.get(0)?.message?.content
-            val jsonType = object : TypeToken<Content>() {}.type
-            val content = Gson().fromJson<Content>(contentData, jsonType)
-            setDashboardData(content)
         }
     }
 
     private fun setDashboardData(content: Content?) {
-        hideProgress()
         binding.apply {
             scrollView.visibility = View.VISIBLE
             overallScoreProgress.text = "53"
             progressScore.progress = 53
-            titleTextView.text =
-                content!!.titles.joinToString { it }
-            binding.descriptionTextView.text = content.description
+            titleTextView.text = content?.titles?.joinToString { it } ?: "No Title"
+            descriptionTextView.text = content?.description ?: "No Description"
         }
     }
 
     private fun showProgress(msg: String = "Loading...") {
-        if (progressDialog != null && !progressDialog!!.isShowing) {
+        if (progressDialog != null && progressDialog!!.isShowing) {
             return
         } else if (isFinishing) {
             return
